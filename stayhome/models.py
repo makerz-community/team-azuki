@@ -22,7 +22,7 @@ class HashTags(models.Model):
 
 
 class Cards(models.Model):
-    author = models.ForeignKey(User,on_delete=models.CASCADE)
+    	author = models.ForeignKey(User,on_delete=models.CASCADE)
 	title = models.CharField('募集タイトル',max_length=32)
 	content = models.TextField('募集内容',default='なし')
 	meeting_link = models.CharField('リンク',max_length=255,blank=True,null=True)
