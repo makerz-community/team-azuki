@@ -22,7 +22,7 @@ class HashTags(models.Model):
 
 
 class Cards(models.Model):
-	author = models.ForeignKey(User,on_delete=models.CASCADE)
+    author = models.ForeignKey(User,on_delete=models.CASCADE)
 	title = models.CharField('募集タイトル',max_length=32)
 	content = models.TextField('募集内容',default='なし')
 	meeting_link = models.CharField('リンク',max_length=255,blank=True,null=True)
@@ -30,7 +30,7 @@ class Cards(models.Model):
 	updated_at = models.DateTimeField('更新日',auto_now=True)
 	hash_tags = models.ManyToManyField(HashTags,blank=True,null=True)
 	conditions = models.IntegerField('状態',choices=CONDITIONS,deault=1)
-	card_image = models.CharField('募集画像',max_length=128,unique=False,blank=True,null=True)
+	card_image = models.ImageField('募集画像',blank=True,null=True)
 	started_at = models.TimeField('開始時間')
 	stopped_at = models.TimeField('終了時間')
 	target_day = models.DateField('対象日')
