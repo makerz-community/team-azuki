@@ -8,7 +8,8 @@ CONDITIONS = (
 class User(models.Model):
 	username = models.CharField('ユーザー名',max_length=50)
 	profile = models.TextField('プロフィール説明',blank=True,null=True)
-	twitter_id = models.CharField('TwitterID',max_length=128)
+	twitter_id = models.CharField('TwitterID',max_length=32)
+	twitter_aouth_id = models.CharField('Twitter裏id',max_length=255)
 
 	def __str__(self):
 		return self.username
