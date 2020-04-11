@@ -6,5 +6,5 @@
 ./code/local_settings.py
 ./code/media
 ./code/.env
+./code/media
 .idea/
-mysql/
