@@ -1,0 +1,10 @@
+### Django
+*.log
+*.pot
+*.pyc
+config/__pycache__/
+stayhome/__pycache__/
+local_settings.py
+media
+.env
+.idea
