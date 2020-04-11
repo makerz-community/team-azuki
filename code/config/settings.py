@@ -29,7 +29,9 @@ SECRET_KEY = env('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    '0.0.0.0'
+]
 
 
 # Application definition
@@ -81,7 +83,14 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
 
 DATABASES = {
-    'default': env.db(),
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'postgres',  # 作成時のデフォルト
+        'USER': 'postgres',  # 作成時のデフォルト
+        'PASSWORD': 'azuazunyan',  # 作成時にdocker-compose.ymlで設定
+        'HOST': 'db',  # コンテナのサーバ名
+        'PORT': 5432,
+    }
 }
 
 
@@ -128,4 +137,3 @@ STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]  # 追加
 """media"""
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
-

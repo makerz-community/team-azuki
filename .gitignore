@@ -1,8 +1,10 @@
 ### Django ###
-*.log
-*.pot
-*.pyc
-__pycache__/
-local_settings.py
-media
-.env
+./code/*.log
+./code/*.pot
+./code/*.pyc
+./code/__pycache__/
+./code/local_settings.py
+./code/media
+./code/.env
+.idea/
+mysql/
