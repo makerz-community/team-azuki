@@ -29,7 +29,9 @@ SECRET_KEY = env('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    '0.0.0.0'
+]
 
 
 # Application definition
@@ -84,7 +86,14 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
 
 DATABASES = {
-    'default': env.db(),
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'postgres',  # 作成時のデフォルト
+        'USER': 'postgres',  # 作成時のデフォルト
+        'PASSWORD': 'azuazunyan',  # 作成時にdocker-compose.ymlで設定
+        'HOST': 'db',  # コンテナのサーバ名
+        'PORT': 5432,
+    }
 }
 
 
@@ -132,7 +141,6 @@ STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]  # 追加
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
 
-
 """AWS関係の設定"""
 AWS_ACCESS_KEY_ID = os.environ['AWS_ACCESS_KEY_ID']
 AWS_SECRET_ACCESS_KEY = os.environ['AWS_SECRET_ACCESS_KEY']
@@ -148,4 +156,3 @@ STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 AWS_S3_FILE_OVERWRITE = False
 
 DEFAULT_FILE_STORAGE = 'config.storage_backends.MediaStorage'
-
