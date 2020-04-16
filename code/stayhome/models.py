@@ -31,7 +31,7 @@ class Cards(models.Model):
         'リンク', max_length=255, blank=True, null=True)
     created_at = models.DateTimeField('作成日', auto_now_add=True)
     updated_at = models.DateTimeField('更新日', auto_now=True)
-    hash_tags = models.ManyToManyField(HashTags, blank=True, null=True)
+    hash_tags = models.ManyToManyField(HashTags, blank=True)
     conditions = models.IntegerField('状態', choices=CONDITIONS, default=1)
     card_image = models.ImageField('募集画像', blank=True, null=True)
     started_at = models.TimeField('開始時間')
