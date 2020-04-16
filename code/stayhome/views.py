@@ -23,9 +23,6 @@ class CardCreateView(generic.FormView):
 
     def form_valid(self,form):
         unfinished_form = form.save(commit=False)
-        ############################################
-        #request.userではないかもしれない↓↓((削除予定))
-        #############################################
         unfinished_form.author = request.user
         unfinished_form.conditions = 1
         unfinished_form.save()
