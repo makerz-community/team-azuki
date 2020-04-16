@@ -23,7 +23,7 @@ class CardCreateView(generic.FormView):
 
     def form_valid(self,form):
         unfinished_form = form.save(commit=False)
-        unfinished_form.author = request.user
+        unfinished_form.author = self.request.user
         unfinished_form.conditions = 1
         unfinished_form.save()
         return super().form_valid(form)
