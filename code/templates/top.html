@@ -1,7 +1,8 @@
 {% extends '_base.html' %}
 {% block content %}
 
-    <dev class="container">
+    <div class="container">
+        <h1>トップ</h1>
         <div class="row">
 
             <div class="col-sm-12">
@@ -16,18 +17,20 @@
                 <ul>
                     <li><a href="{% url 'twitter_login' %}">Twitterでログイン</a></li>
                     <li><a href="{% url 'stayhome:input' %}">新規作成ボタン</a></li>
-                    <li>募集中のやつ一覧を表示させる</li>
+                    <li><a href="{% url 'stayhome:card_list' %}">一覧ページ</a></li>
                 </ul>
             </div>
 
-            <div class="col-sm-12">
+            <div id="cards-list" class="col-sm-12">
+                <h3>新着一覧（仮</h3>
                 {% for card in cards %}
                     <p>{{ card }}</p>
                     {% if card.card_image %}
-                    <img src="{{ card.card_image.url }}"/>
+                        <img src="{{ card.card_image.url }}"/>
                     {% endif %}
                 {% endfor %}
             </div>
         </div>
-    </dev>
+    </div>
+
 {% endblock %}

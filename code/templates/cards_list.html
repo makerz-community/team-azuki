@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<h1>一覧ページ</h1>
+
+<!-- 検索 -->
+<form method="GET" action="{% url 'stayhome:card_list' %}">
+    <input type="text" name="keyword">
+    <button type="submit">検索</button>
+</form>
+{% if messages %}
+<div>
+    {% for message in messages %}
+    <p> {{ message }}</p>
+    {% endfor %}
+</div>
+{% endif %}
+
+
+<!-- リスト本体 -->
+<div id="cards-list" class="col-sm-12">
+    {% for card in cards %}
+        <h3>{{ card }}</h3>
+        <p>
+            {% for hash_tag in card.hash_tags.all %}
+                #{{ hash_tag }},
+            {% endfor %}
+        </p>
+
+        {% if card.card_image %}
+            <a href="{% url 'stayhome:card_detail' pk=card.pk %}"><img src="{{ card.card_image.url }}"/></a>
+        {% endif %}
+    {% endfor %}
+</div>
+
+
+<!-- ページネーション部分-->
+<!-- 前へ の部分 -->
+{% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}">前へ</a>
+{% endif %}
+
+<!-- 数字の部分 -->
+{% for num in page_obj.paginator.page_range %}
+    {% if page_obj.number == num %}
+        <span>{{ num }}</span>
+    {% else %}
+        <a href="?page={{ num }}">{{ num }}</a>
+    {% endif %}
+{% endfor %}
+
+<!-- 次へ の部分 -->
+{% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}">次へ</a>
+{% endif %}
+
+<p><a href="{% url 'stayhome:top' %}">トップに戻る</a></p>
+<p><a href="{% url 'stayhome:input' %}">募集してみる</a></p>
+
+</body>
+</html>

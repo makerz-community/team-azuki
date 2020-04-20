@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<h1>詳細ページ</h1>
+<ul>
+    <li>タイトル: {{ card.title }}</li>
+    <li>作成者: {{ card.auther }}</li>
+    <li>せつめい: {{ card.content }}</li>
+    <li>やる日: {{ card.target_day }}</li>
+    <li>始まる時間: {{ card.started_at }}</li>
+    <li>終わる時間: {{ card.started_at }}</li>
+    <li>募集にんずう: {{ card.member_number }}</li>
+</ul>
+
+{% if card.card_image %}
+    <img src="{{ card.card_image.url }}"/>
+{% endif %}
+
+<br>
+<!-- ここどうするか後で相談 -->
+<button>参加する</button>
+
+<hr>
+<p><a href="{% url 'stayhome:top' %}">トップに戻る</a></p>
+<p><a href="{% url 'stayhome:input' %}">募集してみる</a></p>
+<p><a href="{% url 'stayhome:card_list' %}">違う募集を探す</a></p>
+
+</body>
+</html>
