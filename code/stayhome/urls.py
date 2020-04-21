@@ -9,8 +9,8 @@ urlpatterns = [
     path('output/', CardPreviewView.as_view(), name="preview"),
     path('share/', TwitterShareView.as_view(), name="share"),
 
-    path('cards/list', CardListView.as_view(), name="card_list"),
-    path('cards/detail/<int:pk>/', CardDetailView.as_view(), name="card_detail"),
+    path('cards/', CardListView.as_view(), name="card_list"),
+    path('cards/<int:pk>/', CardDetailView.as_view(), name="card_detail"),
 
     path('otameshi/', OtameshiView.as_view(), name="otameshi"),
 ]
