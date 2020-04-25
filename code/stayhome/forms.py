@@ -1,6 +1,5 @@
 from django import forms
-from .models import User, Cards, HashTags
-
+from .models import User,Card,HashTags
 
 # ModelForm使わずにFormでhash_tagsも一緒にとるように変えました
 class CardCreateForm(forms.Form):
@@ -10,6 +9,6 @@ class CardCreateForm(forms.Form):
         label='リンク', max_length=255,widget=forms.TextInput)
     started_at = forms.TimeField(label='開始時間',widget=forms.TextInput)
     stopped_at = forms.TimeField(label='終了時間',widget=forms.TextInput)
-    target_day = forms.DateField(label='対象日',widget=forms.DateInput)
+    target_day = forms.DateField(label='対象日',widget=forms.Dateinput)
     member_number = forms.IntegerField(label='予定人数',widget=forms.NumberInput)
-    hash_tags = forms.CharField(label='ハッシュタグ',max_length=255,widget=forms.TextInput)
+    hash_tags = forms.CharField(label='ハッシュタグ',max_length=255,widget=forms,TextInput)
