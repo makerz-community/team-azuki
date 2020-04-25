@@ -30,7 +30,7 @@ SECRET_KEY = env('SECRET_KEY')
 DEBUG = True
 
 ALLOWED_HOSTS = [
-    '0.0.0.0'
+    '0.0.0.0',
 ]
 
 
@@ -43,12 +43,19 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',
 
     # 3rd party apps
     'storages',  # 追加
 
+    # The following apps are required for allauth:
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.twitter',  # 追加
+
     # My applications
-    'stayhome.apps.StayhomeConfig'
+    'stayhome.apps.StayhomeConfig',
 ]
 
 MIDDLEWARE = [
@@ -156,3 +163,30 @@ STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 AWS_S3_FILE_OVERWRITE = False
 
 DEFAULT_FILE_STORAGE = 'config.storage_backends.MediaStorage'
+
+
+"""django-allauth"""
+AUTHENTICATION_BACKENDS = [
+    # Needed to login by username in Django admin, regardless of `allauth`
+    'django.contrib.auth.backends.ModelBackend',
+
+    # `allauth` specific authentication methods, such as login by e-mail
+    'allauth.account.auth_backends.AuthenticationBackend',
+]
+
+SITE_ID = 1
+
+# ユーザー登録確認メールは送信しない
+ACCOUNT_EMAIL_VERIFICATION = 'none'
+
+# メールアドレスを必須項目にする
+ACCOUNT_EMAIL_REQUIRED = False
+
+# ログインログアウト後リダイレクト先
+LOGIN_REDIRECT_URL = 'stayhome:top'
+ACCOUNT_LOGOUT_REDIRECT_URL = 'stayhome:top'
+ACCOUNT_LOGOUT_ON_GET = True
+
+# Provider specific settings
+SOCIALACCOUNT_PROVIDERS = {
+}

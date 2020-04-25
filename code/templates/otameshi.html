@@ -1,0 +1,22 @@
+{% extends '_base.html' %}
+{% block content %}
+
+<dev class="container">
+    <div class="row">
+        <div class="col-sm-12">
+
+            <p>ボタンを押したらmediaフォルダに入っているfff_test.pngがs3にアップロードされます</p>
+
+            <form id="otameshi" action="{% url 'stayhome:otameshi' %}" method="POST">
+                <button type="submit" class="btn btn-primary" >お試し</button>
+                {% csrf_token %}
+            </form>
+
+            {% if done %}
+            <p>{{ done }}</p>
+            {% endif %}
+
+        </div>
+    </div>
+</dev>
+{% endblock %}
