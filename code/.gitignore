@@ -4,6 +4,7 @@
 *.pyc
 config/__pycache__/
 stayhome/__pycache__/
+stayhome/migrations/__pycache__/
 local_settings.py
 .env
 .idea
