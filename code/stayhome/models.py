@@ -23,7 +23,7 @@ class HashTags(models.Model):
         return self.name
 
 
-class Cards(models.Model):
+class Card(models.Model):
     author = models.ForeignKey(User, on_delete=models.CASCADE)
     title = models.CharField('募集タイトル', max_length=32)
     content = models.TextField('募集内容', default='なし')
