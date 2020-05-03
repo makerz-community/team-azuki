@@ -129,6 +129,8 @@ class CardCreateView(generic.FormView):
         # 募集カードにさっき取得(作成)したハッシュタグを加えて保存
         new_card.hash_tags.add(hashtag)
         new_card.save()
+
+
         # succes_urlへ
         return super().form_valid(form)
 
