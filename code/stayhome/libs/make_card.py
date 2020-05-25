@@ -5,8 +5,6 @@ import requests
 import boto3
 import datetime
 
-import unicodedata
-
 from PIL import Image, ImageFont, ImageDraw, ImageFilter
 from allauth.socialaccount.models import SocialAccount
 
@@ -14,32 +12,12 @@ from django.conf import settings
 from ..models import Card
 
 """""""""""""""""""""""""""""""""""""""""""""""
-TODO
-- カード全体のデザイン（文字とアイコンの配置、配色とか）
-  - とりあえず配置とか大きさとか折り返す文字数とかは適当
-- 背景画像
-- フォント
-
 Pillowのメモ
 Image.new(): ベタ画像作成
 ImageDraw.Draw(): Drawオブジェクト作成
 ImageDraw.textsize(): 文字列の(length, height)を返す
 ImageDraw.text(): 文字列を画像に重ねる
 """""""""""""""""""""""""""""""""""""""""""""""
-
-
-# #######################################
-# # 全角を2文字、半角を1文字でカウントする関数   #
-# # （add_text_to_image_multilineで使用） #
-# #######################################
-# def get_east_asian_width_count(text):
-#     count = 0
-#     for c in text:
-#         if unicodedata.east_asian_width(c) in 'FWA':
-#             count += 2
-#         else:
-#             count += 1
-#     return count
 
 
 #######################################
@@ -62,6 +40,21 @@ def lastone(iterable):
     yield last, True
 
 
+#############################
+# ハッシュタグ取得して整形する関数 #
+#############################
+def hashtags_to_one_line(card):
+    # カードに紐づいているハッシュタグを取得する
+    hashtags_names = card.hash_tags.all().values_list("name", flat=True)
+    hashtags_names_list = list(hashtags_names)
+
+    # 画像に描画するように「#ハッシュタグ1 #ハッシュタグ2 ...」の形式に整形する
+    names_list_with_hash = list(map(lambda x: "#" + x, hashtags_names_list))  # ['#ハッシュタグ1', '#ハッシュタグ2', '#ハッシュタグ3',...]
+    one_line_hashtags = " ".join(names_list_with_hash)
+
+    return one_line_hashtags
+
+
 ##############
 # 背景画像作成 #
 ##############
@@ -73,7 +66,7 @@ def build_base_image():
 
 
 ################################
-# 画像への文字配置用の関数   （1行） #
+# 画像への文字配置用の関数（1行）    #
 ################################
 def add_text_to_image_oneline(img, text, font_path, font_size, font_color, height, width, max_length=740):
     position = (width, height)
@@ -84,7 +77,6 @@ def add_text_to_image_oneline(img, text, font_path, font_size, font_color, heigh
         while draw.textsize(text + '…', font=font)[0] > max_length:
             text = text[:-1]
         text = text + '…'
-
     draw.text(position, text, font_color, font=font)
     return img
 
@@ -97,33 +89,48 @@ def add_text_to_image_multiline(img, text, font_path, font_size, font_color, hei
     draw = ImageDraw.Draw(img)
     wrap_list = textwrap.wrap(text, one_line_length)
     line_counter = 0
-    # wrap_listから最初の3行を1行づつ取り出し、lineに代入
-    # （ただし最後の行だけis_lastがTrueになり、）
-    for line, is_last in lastone(wrap_list[:3]):
-        # 高さ座標をline_counterに応じて下げる
-        y = line_counter * line_height + height
-        text_width, text_height = draw.textsize(line, font)
-        position = (width, y)
-        # 取り出したlineが3行目でかつ、4行目以降が存在する場合は3行目の末尾を「…」にする
-        if is_last and wrap_list[3]:
-            while len(line) >= one_line_length:
-                line = line[:-1]
-            line = line + '…'
-        draw.multiline_text(position, line, font_color, font=font, align="center")  # 1行分の文字列を画像に描画
-        line_counter = line_counter + 1  # 行数のカウンターに1
+
+    # wrap_listが3行以上になるとき
+    if len(wrap_list) > 3:
+        # wrap_listから最初の3行を1行づつ取り出し、lineに代入
+        # （ただし最後の行だけis_lastがTrueになり、末尾を「…」に置換）
+        for line, is_last in lastone(wrap_list[:3]):
+            # 高さ座標をline_counter(行数)に応じて下げる
+            y = line_counter * line_height + height
+            position = (width, y)
+            # 取り出したlineが3行目の場合は末尾を「…」に置換する
+            if is_last:
+                while len(line) >= one_line_length:
+                    line = line[:-1]
+                line = line + '…'
+            draw.multiline_text(position, line, font_color, font=font)  # 1行分の文字列を画像に描画
+            line_counter = line_counter + 1  # 行数のカウンターに1
+
+    # wrap_listが3行未満になるとき
+    else:
+        for line in wrap_list:
+            # 高さ座標をline_counterに応じて下げる
+            y = line_counter * line_height + height
+            position = (width, y)
+            draw.multiline_text(position, line, font_color, font=font)  # 1行分の文字列を画像に描画
+            line_counter = line_counter + 1  # 行数のカウンターに1
+
     return img
 
 
-################################
-# 画像へのアイコン貼り付け用の関数定義 #
-################################
-# def add_twitter_icon(img, user):
-def add_twitter_icon(img):
-    # twitter_account_data = SocialAccount.objects.get(user_id=user.id)
-    # twitter_icon_url_normal = twitter_account_data.extra_data["profile_image_url_https"]
-    twitter_icon_url_normal = 'https://pbs.twimg.com/profile_images/1221399035887542272/1Mh2IfNL_normal.jpg'
+#######################
+# アイコン貼り付け用の関数 #
+#######################
+def add_twitter_icon(img, user):
+# def add_twitter_icon(img):
+    twitter_account_data = SocialAccount.objects.get(user_id=user.id)
+    twitter_icon_url_normal = twitter_account_data.extra_data["profile_image_url_https"]
+    # デバッグ用
+    # twitter_icon_url_normal = 'https://pbs.twimg.com/profile_images/1221399035887542272/1Mh2IfNL_normal.jpg'
+
     twitter_icon_url_bigger = twitter_icon_url_normal.replace("_normal", "_bigger")  # サイズが小さいのでbiggerにreplace
     icon = Image.open(io.BytesIO(requests.get(twitter_icon_url_bigger).content))
+
     # 円形のマスク作成
     mask = Image.new("L", icon.size)
     draw = ImageDraw.Draw(mask)
@@ -131,10 +138,12 @@ def add_twitter_icon(img):
     mask = mask.filter(ImageFilter.GaussianBlur(1))
     del draw
     icon.putalpha(mask)
+
     # なぜか一回保存しないと反映されないので一時保存してすぐ削除する
     icon.save("./media/sample.png")
-    img.paste(icon, (600, 400), icon)
+    img.paste(icon, (600, 420), icon)
     del icon
+
     return img
 
 
@@ -171,33 +180,111 @@ def upload_to_s3(img, card):
     return card.card_image.url
 
 
-"""試し（後で削除）"""
-base_image = build_base_image()
-title = "zoomで飲み会しようようホゲホゲホゲホゲホゲホゲホゲホゲホゲホゲホゲホゲホゲホゲホゲホゲホゲホゲ"
-font_path = "./static/fonts/Koruri-Regular.ttf"  # TODO パスの入れ方？ フォント？
-font_size = 90
-font_color = (255, 255, 255)
-height = 80
-width = 80
-line_height = 100
-one_line_length = 11
+# #############################################
+# # [ボツ]全角を2文字、半角を1文字でカウントする関数   #
+# # （add_text_to_image_multilineで使用）       #
+# #############################################
+# def get_east_asian_width_count(text):
+#     count = 0
+#     for c in text:
+#         if unicodedata.east_asian_width(c) in 'FWA':
+#             count += 2
+#         else:
+#             count += 1
+#     return count
 
 
-"""by"""
+# """viewsでの呼び出し"""
+# # 1. ベース画像作成とフォント指定
+# base_image = build_base_image()
+# font_path = "./static/fonts/Koruri-Regular.ttf"
+# font_color = (255, 255, 255)
+#
+# # 2. タイトルいれる
+# title = card.title
+# font_size = 90
+# height = 70
+# width = 90
+# line_height = 105
+# one_line_length = 11
+# img_with_title = add_text_to_image_multiline(base_image, title, font_path, font_size, font_color, height, width, line_height, one_line_length)
+#
+# # 3. by入れる
+# text = "by"
+# font_size = 45
+# height = 420
+# width = 530
+# line_height = 100
+# one_line_length = 11
+# img_with_by = add_text_to_image_oneline(img_with_title, text, font_path, font_size, font_color, height, width)
+#
+# # 4. アイコン入れる
+# img_with_icon = add_twitter_icon(img_with_by)
+#
+# # 5. ハッシュタグ入れる
+# tags_list = hashtags_to_one_line(card)
+# tags = tags_list
+# font_size = 32
+# height = 520
+# width = 90
+# line_height = 40
+# one_line_length = 34
+# img_complete = add_text_to_image_multiline(img_with_by, tags, font_path, font_size, font_color, height, width, line_height, one_line_length)
+#
+# # 6. S3にアップロードしてS3のパスを返す
+# card_image_path = upload_to_s3(img_complete, card)
 
-# 複数行のテキストを画像に貼る場合
-img = add_text_to_image_multiline(base_image, title, font_path, font_size, font_color, height, width, line_height, one_line_length)
 
-
-# 1行のテキストを画像に貼る場合
-img = add_text_to_image_oneline(base_image, title, font_path, font_size, font_color, height, width)
-
-
-# アイコンを画像に貼る場合
-img = add_twitter_icon(base_image)
-
-
-now = datetime.datetime.now()
-file_name = "username" + "_" + now.strftime('%Y%m%d_%H%M%S') + ".png"  # ファイル名
-file_path_local = "./media/" + file_name
-img.save(file_path_local, "png")
+"""
+デバッグ用
+"""
+# """タイトル"""
+# base_image = build_base_image()
+# title = "サクッと飲みませんか？コミュ障ですが初対面の方大歓迎です！"
+# font_path = "./static/fonts/Koruri-Regular.ttf"
+# font_size = 90
+# font_color = (255, 255, 255)
+# height = 70
+# width = 90
+# line_height = 105
+# one_line_length = 11
+#
+#
+# """by"""
+# base_image = build_base_image()
+# title = "by"
+# font_path = "./static/fonts/Koruri-Regular.ttf"  # TODO パスの入れ方？ フォント？
+# font_size = 45
+# font_color = (255, 255, 255)
+# height = 420
+# width = 530
+# line_height = 100
+# one_line_length = 11
+#
+#
+# """ハッシュタグ"""
+# # list = hashtags_to_one_line(card)
+# title = "#ハッシュタグ1 #ハッシュタグ2 #ハッシュタグ3 #ハッシュタグ4 #ハッシュタグ5"
+# font_path = "./static/fonts/Koruri-Regular.ttf"  # TODO パスの入れ方？ フォント？
+# font_size = 32
+# font_color = (255, 255, 255)
+# height = 520
+# width = 90
+# line_height = 40
+# one_line_length = 34
+#
+#
+#
+# # 複数行のテキストを画像に貼る場合
+# img = add_text_to_image_multiline(base_image, title, font_path, font_size, font_color, height, width, line_height, one_line_length)
+#
+# # 1行のテキストを画像に貼る場合
+# img = add_text_to_image_oneline(img, title, font_path, font_size, font_color, height, width)
+#
+# # アイコンを画像に貼る場合
+# img = add_twitter_icon(img)
+#
+# now = datetime.datetime.now()
+# file_name = "username" + "_" + now.strftime('%Y%m%d_%H%M%S') + ".png"  # ファイル名
+# file_path_local = "./media/" + file_name
+# img.save(file_path_local, "png")
