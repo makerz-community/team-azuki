@@ -31,14 +31,12 @@ ImageDraw.text(): 文字列を画像に重ねる
 def build_base_image():
     # 背景画像の作成（とりあえずオレンジ。既存画像を使う場合は以下）
     base_image = Image.new("RGB", (1200, 630), (255, 165, 0))
-    # base_image_path = "./static/画像ファイル.png"  # TODO staticのパス？
-    # base_image = Image.open(base_image_path).copy()
 
     return base_image
 
 
 ################################
-# 画像への文字配置用の関数定義（1行） #
+# 画像への文字配置用の関数   （1行） #
 ################################
 def add_text_to_image_oneline(img, text, font_path, font_size, font_color, height, width, max_length=740):
     position = (width, height)
@@ -54,20 +52,51 @@ def add_text_to_image_oneline(img, text, font_path, font_size, font_color, heigh
     return img
 
 
+#######################################
+# forループで最後の要素を取得する関数        #
+# （add_text_to_image_multilineで使用） #
+#######################################
+def lastone(iterable):
+    """与えられたイテレータブルオブジェクトの
+    最後の一つの要素の時にTrue、それ以外の時にFalseを返す
+    """
+    # イテレータを取得して最初の値を取得する
+    it = iter(iterable)
+    last = next(it)
+    # 2番目の値から開始して反復子を使い果たすまで実行
+    for val in it:
+        # 一つ前の値を返す
+        yield last, False
+        last = val  # 値の更新
+    # 最後の一つ
+    yield last, True
+
+
 ##################################
-# 画像への文字配置用の関数定義（複数行） #
+# 画像への文字配置用の関数（複数行）    #
 ##################################
 def add_text_to_image_multiline(img, text, font_path, font_size, font_color, height, width):
     font = ImageFont.truetype(font_path, font_size)
     draw = ImageDraw.Draw(img)
-    wrap_list = textwrap.wrap(text, 16)
+    one_line_length = 16
+    wrap_list = textwrap.wrap(text, one_line_length)
     line_counter = 0
-    for line in wrap_list:  # wrap_listから1行づつ取り出しlineに代入
-        y = line_counter * 80 + height  # 高さ座標をline_counterに応じて下げる
+
+    # wrap_listから最初の3行を1行づつ取り出し、lineに代入
+    # （ただし最後の行だけis_lastがTrueになり、）
+    for line, is_last in lastone(wrap_list[:3]):
+        # 高さ座標をline_counterに応じて下げる
+        y = line_counter * 80 + height
         position = (width, y)
+
+        # 取り出したlineが3行目でかつ、4行目以降が存在する場合は3行目の末尾を「…」にする
+        if is_last and wrap_list[3]:
+            while len(line) >= one_line_length:
+                line = line[:-1]
+            line = line + '…'
+
         draw.multiline_text(position, line, font_color, font=font)  # 1行分の文字列を画像に描画
         line_counter = line_counter + 1  # 行数のカウンターに1
-
     return img
 
 
@@ -122,7 +151,7 @@ def upload_to_s3(img, card):
 
 """試し（後で削除）"""
 base_image = build_base_image()
-title = "zoomで飲み会しようようホゲホゲホゲホゲホゲホゲホゲホゲホゲホゲホゲホゲホゲ"
+title = "zoomで飲み会しようようホゲホゲホゲホゲホゲホゲホゲホゲホゲホゲホゲホゲホゲホゲホゲホゲホゲホゲ"
 font_path = "./static/fonts/Koruri-Regular.ttf"  # TODO パスの入れ方？ フォント？
 font_size = 57
 font_color = (255, 255, 255)
