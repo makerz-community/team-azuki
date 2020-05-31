@@ -195,7 +195,7 @@ class MyPageView(generic.ListView):
 
 # カードを入れるとカードからOGP画像を作って保存までしてくれる関数
 # 戻り値にS3のpathを返す。
-def card_add_card_images(card):
+def card_add_card_image(card):
     # """viewsでの呼び出し"""
     # # 1. ベース画像作成とフォント指定
     base_image = build_base_image()
