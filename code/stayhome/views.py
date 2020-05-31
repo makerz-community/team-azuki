@@ -144,6 +144,7 @@ class CardCreateView(View):
                         hashtag = HashTags.objects.create(name=item['hash_tags'])
                     finally:
                         new_card.hash_tags.add(hashtag) 
+
                 # s3パスが返ってくるはずなのでそれが空でなければ次に進める
                 new_card_image_path = card_add_card_image(new_card)
                 if len(new_card_image_path) == 0:
