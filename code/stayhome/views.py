@@ -1,7 +1,8 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse, reverse_lazy
-from django.views import generic
-from .forms import CardCreateForm
+from django.views import generic,View
+from .forms import CardForm,HashTagsForm
+from django.forms.formsets import formset_factory
 from .models import Card, HashTags, User
 from django.conf import settings
 import boto3
@@ -10,6 +11,8 @@ from django.contrib import messages
 from django.db.models import Q
 from functools import reduce
 from operator import and_
+
+# from .libs.make_card import hashtags_to_one_line,build_base_image,add_text_to_image_oneline,add_text_to_image_multiline,add_twitter_icon,upload_to_s3
 
 
 ##############
@@ -104,39 +107,56 @@ class OtameshiView(generic.TemplateView):
 ##################
 # 募集内容入力ページ #
 ##################
-class CardCreateView(generic.FormView):
-    # FormViewに変更する
-    template_name = "input.html"
-    form_class = CardCreateForm
-    success_url = reverse_lazy('stayhome:preview')
+class CardCreateView(View):
+     #formset_factoryを使う
+    CardFormSet = formset_factory(CardForm)
+    HashTagsFormSet = formset_factory(HashTagsForm,extra=0)
 
-    def form_valid(self, form):
-        # ハッシュタグはユニークで保存したいので取得できなかったら作るようにする
-        try:
-            hashtag = HashTags.objects.get(name=form.cleaned_data['hash_tags'])
-        except:
-            hashtag = HashTags.objects.create(
-                name=form.cleaned_data['hash_tags'])
-        # リクエスト中のユーザーをいれる(twitterとの連携をまた考える)
-        author = self.request.user
-        # 状態：1>募集中、2>募集終了
-        conditions = 1
-        # 募集カードを作る
-        new_card = Card.objects.create(author=author, title=form.cleaned_data['title'], content=form.cleaned_data['content'],
-                                       conditions=conditions, meeting_link=form.cleaned_data['meeting_link'], started_at=form.cleaned_data[
-                                           'started_at'], stopped_at=form.cleaned_data['stopped_at'],
-                                       target_day=form.cleaned_data['target_day'], member_number=form.cleaned_data['member_number'])
-        # 募集カードにさっき取得(作成)したハッシュタグを加えて保存
-        new_card.hash_tags.add(hashtag)
-        new_card.save()
-        # succes_urlへ
-        return super().form_valid(form)
+    def get(self,request,*args,**kwargs):
+        cards_set = self.CardFormSet(prefix='cards')
+        hash_set = self.HashTagsFormSet(prefix='hash')
+        context = {
+            'cards_set':cards_set,
+            'hash_set':hash_set,
+        }
+        return render(request,'input.html',context)
 
-    def get_initial(self):
-        initial = super().get_initial()
-        initial["initial_title"] = "募集タイトルを入力してください"
-        initial["initial_content"] = "例：エンジニアが集まってワイワイする予定です。お酒飲めない人もたくさん参加するので気軽に応募してください。"
-        return initial
+    def post(self,request,*args,**kwargs):
+        # prefixを設定
+        cards_set = self.CardFormSet(request.POST,prefix='cards')
+        hash_set = self.HashTagsFormSet(request.POST,prefix='hash')
+
+        if cards_set.is_valid() and hash_set.is_valid():
+
+            # prefixを使うことでcardsのcleaned_dataの中が一段深くなる(複数フォーム想定されるため)
+            new_card = Card.objects.create(author=request.user,title=cards_set.cleaned_data[0]['title'],content=cards_set.cleaned_data[0]['content'],
+                        conditions=1,meeting_link=cards_set.cleaned_data[0]['meeting_link'],started_at=cards_set.cleaned_data[0]['started_at'],
+                        stopped_at=cards_set.cleaned_data[0]['stopped_at'],target_day=cards_set.cleaned_data[0]['target_day'],
+                        member_number=cards_set.cleaned_data[0]['member_number'])
+
+            if hash_set.cleaned_data[0]:
+            # ハッシュタグは複数入ってくる可能性あるのでfor使う
+                for item in hash_set.cleaned_data:
+                    # 既にそのハッシュタグ作られていれば作成しない
+                    try:
+                        hashtag = HashTags.objects.get(name=item['hash_tags'])
+                    except:
+                        hashtag = HashTags.objects.create(name=item['hash_tags'])
+                    finally:
+                        new_card.hash_tags.add(hashtag)  
+                new_card.save()
+                # s3パスが返ってくるはずなのでそれが空でなければ次に進める
+                # new_card_image_path = card_add_card_image(new_card)
+                # if len(new_card_image_path) == 0:
+                #     return redirect('extra_app:preview')
+                # else:
+                    # エラーなら作ったカード削除して元のページに返す
+                    # new_card.delete()
+                    # messages.error(request,"画像のアップロードに失敗しました")
+                    # return render(request,'input.html',{'cards_set':cards_set,'hash_set':hash_set})
+        else:
+            # バリデーションに落ちた時の処理。例：日付フォーマットを間違えた
+            return render(request,'input.html',{'cards_set':cards_set,'hash_set':hash_set})
 
 
 ############################
@@ -151,3 +171,67 @@ class CardPreviewView(generic.TemplateView):
 ###############
 class TwitterShareView(generic.TemplateView):
     template_name = "share.html"
+
+
+
+################
+# マイページ #
+#################
+class MyPageView(generic.ListView):
+    template_name = "mypage.html"
+    model = Card
+    context_object_name = "cards"
+    # mypage.htmlに「cards:自分の募集カード一覧」「user:ログインユーザーの情報」を渡す
+
+    def get_queryset(self):
+        return Card.objects.filter(author=self.request.user)
+
+    def get_context_data(self,**kwargs):
+        context = super().get_context_data(**kwargs)
+        context["user"] = self.request.user
+        return context
+
+
+# カードを入れるとカードからOGP画像を作って保存までしてくれる関数
+# 戻り値にS3のpathを返す。
+# def card_add_card_images(card):
+    # """viewsでの呼び出し"""
+    # # 1. ベース画像作成とフォント指定
+    # base_image = build_base_image()
+    # font_path = "./static/fonts/Koruri-Regular.ttf"
+    # font_color = (255, 255, 255)
+
+    # # 2. タイトルいれる
+    # title = card.title
+    # font_size = 90
+    # height = 70
+    # width = 90
+    # line_height = 105
+    # one_line_length = 11
+    # img_with_title = add_text_to_image_multiline(base_image, title, font_path, font_size, font_color, height, width, line_height, one_line_length)
+
+    # # 3. by入れる
+    # text = "by"
+    # font_size = 45
+    # height = 420
+    # width = 530
+    # line_height = 100
+    # one_line_length = 11
+    # img_with_by = add_text_to_image_oneline(img_with_title, text, font_path, font_size, font_color, height, width)
+                
+    # # 4. アイコン入れる
+    # img_with_icon = add_twitter_icon(img_with_by)
+
+    # # 5. ハッシュタグ入れる
+    # tags_list = hashtags_to_one_line(card)
+    # tags = tags_list
+    # font_size = 32
+    # height = 520
+    # width = 90
+    # line_height = 40
+    # one_line_length = 34
+    # img_complete = add_text_to_image_multiline(img_with_by, tags, font_path, font_size, font_color, height, width, line_height, one_line_length)
+
+    # # 6. S3にアップロードしてS3のパスを返す
+    # card_image_path = upload_to_s3(img_complete, card)
+    # return card_image_path
