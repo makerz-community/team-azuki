@@ -12,7 +12,7 @@ from django.db.models import Q
 from functools import reduce
 from operator import and_
 
-# from .libs.make_card import hashtags_to_one_line,build_base_image,add_text_to_image_oneline,add_text_to_image_multiline,add_twitter_icon,upload_to_s3
+from .libs.make_card import hashtags_to_one_line,build_base_image,add_text_to_image_oneline,add_text_to_image_multiline,add_twitter_icon,upload_to_s3
 
 
 ##############
@@ -143,20 +143,20 @@ class CardCreateView(View):
                     except:
                         hashtag = HashTags.objects.create(name=item['hash_tags'])
                     finally:
-                        new_card.hash_tags.add(hashtag)  
-                new_card.save()
+                        new_card.hash_tags.add(hashtag) 
                 # s3パスが返ってくるはずなのでそれが空でなければ次に進める
-                # new_card_image_path = card_add_card_image(new_card)
-                # if len(new_card_image_path) == 0:
-                #     return redirect('extra_app:preview')
-                # else:
+                new_card_image_path = card_add_card_image(new_card)
+                if len(new_card_image_path) == 0:
+                    return redirect('extra_app:preview')
+                else:
                     # エラーなら作ったカード削除して元のページに返す
-                    # new_card.delete()
-                    # messages.error(request,"画像のアップロードに失敗しました")
-                    # return render(request,'input.html',{'cards_set':cards_set,'hash_set':hash_set})
+                    new_card.delete()
+                    messages.error(request,"画像のアップロードに失敗しました")
+                    return render(request,'input.html',{'cards_set':cards_set,'hash_set':hash_set})
         else:
             # バリデーションに落ちた時の処理。例：日付フォーマットを間違えた
             return render(request,'input.html',{'cards_set':cards_set,'hash_set':hash_set})
+
 
 
 ############################
@@ -194,44 +194,44 @@ class MyPageView(generic.ListView):
 
 # カードを入れるとカードからOGP画像を作って保存までしてくれる関数
 # 戻り値にS3のpathを返す。
-# def card_add_card_images(card):
+def card_add_card_images(card):
     # """viewsでの呼び出し"""
     # # 1. ベース画像作成とフォント指定
-    # base_image = build_base_image()
-    # font_path = "./static/fonts/Koruri-Regular.ttf"
-    # font_color = (255, 255, 255)
+    base_image = build_base_image()
+    font_path = "./static/fonts/Koruri-Regular.ttf"
+    font_color = (255, 255, 255)
 
     # # 2. タイトルいれる
-    # title = card.title
-    # font_size = 90
-    # height = 70
-    # width = 90
-    # line_height = 105
-    # one_line_length = 11
-    # img_with_title = add_text_to_image_multiline(base_image, title, font_path, font_size, font_color, height, width, line_height, one_line_length)
+    title = card.title
+    font_size = 90
+    height = 70
+    width = 90
+    line_height = 105
+    one_line_length = 11
+    img_with_title = add_text_to_image_multiline(base_image, title, font_path, font_size, font_color, height, width, line_height, one_line_length)
 
     # # 3. by入れる
-    # text = "by"
-    # font_size = 45
-    # height = 420
-    # width = 530
-    # line_height = 100
-    # one_line_length = 11
-    # img_with_by = add_text_to_image_oneline(img_with_title, text, font_path, font_size, font_color, height, width)
+    text = "by"
+    font_size = 45
+    height = 420
+    width = 530
+    line_height = 100
+    one_line_length = 11
+    img_with_by = add_text_to_image_oneline(img_with_title, text, font_path, font_size, font_color, height, width)
                 
     # # 4. アイコン入れる
-    # img_with_icon = add_twitter_icon(img_with_by)
+    img_with_icon = add_twitter_icon(img_with_by)
 
     # # 5. ハッシュタグ入れる
-    # tags_list = hashtags_to_one_line(card)
-    # tags = tags_list
-    # font_size = 32
-    # height = 520
-    # width = 90
-    # line_height = 40
-    # one_line_length = 34
-    # img_complete = add_text_to_image_multiline(img_with_by, tags, font_path, font_size, font_color, height, width, line_height, one_line_length)
+    tags_list = hashtags_to_one_line(card)
+    tags = tags_list
+    font_size = 32
+    height = 520
+    width = 90
+    line_height = 40
+    one_line_length = 34
+    img_complete = add_text_to_image_multiline(img_with_by, tags, font_path, font_size, font_color, height, width, line_height, one_line_length)
 
     # # 6. S3にアップロードしてS3のパスを返す
-    # card_image_path = upload_to_s3(img_complete, card)
-    # return card_image_path
+    card_image_path = upload_to_s3(img_complete, card)
+    return card_image_path
