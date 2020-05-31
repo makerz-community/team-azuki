@@ -25,7 +25,8 @@ ImageDraw.text(): 文字列を画像に重ねる
 # （add_text_to_image_multilineで使用） #
 #######################################
 def lastone(iterable):
-    """与えられたイテレータブルオブジェクトの
+    """
+    与えられたイテレータブルオブジェクトの
     最後の一つの要素の時にTrue、それ以外の時にFalseを返す
     """
     # イテレータを取得して最初の値を取得する
@@ -45,11 +46,10 @@ def lastone(iterable):
 #############################
 def hashtags_to_one_line(card):
     # カードに紐づいているハッシュタグを取得する
-    hashtags_names = card.hash_tags.all().values_list("name", flat=True)
-    hashtags_names_list = list(hashtags_names)
+    hashtags_names = list(card.hash_tags.all().values_list("name", flat=True))
 
     # 画像に描画するように「#ハッシュタグ1 #ハッシュタグ2 ...」の形式に整形する
-    names_list_with_hash = list(map(lambda x: "#" + x, hashtags_names_list))  # ['#ハッシュタグ1', '#ハッシュタグ2', '#ハッシュタグ3',...]
+    names_list_with_hash = list(map(lambda x: "#" + x, hashtags_names))  # ['#ハッシュタグ1', '#ハッシュタグ2', '#ハッシュタグ3',...]
     one_line_hashtags = " ".join(names_list_with_hash)
 
     return one_line_hashtags
@@ -59,7 +59,7 @@ def hashtags_to_one_line(card):
 # 背景画像作成 #
 ##############
 def build_base_image():
-    # 背景画像の作成（とりあえずオレンジ。既存画像を使う場合は以下）
+    # 背景画像の作成（オレンジ）
     base_image = Image.new("RGB", (1200, 630), (255, 165, 0))
 
     return base_image
@@ -122,11 +122,8 @@ def add_text_to_image_multiline(img, text, font_path, font_size, font_color, hei
 # アイコン貼り付け用の関数 #
 #######################
 def add_twitter_icon(img, user):
-# def add_twitter_icon(img):
     twitter_account_data = SocialAccount.objects.get(user_id=user.id)
     twitter_icon_url_normal = twitter_account_data.extra_data["profile_image_url_https"]
-    # デバッグ用
-    # twitter_icon_url_normal = 'https://pbs.twimg.com/profile_images/1221399035887542272/1Mh2IfNL_normal.jpg'
 
     twitter_icon_url_bigger = twitter_icon_url_normal.replace("_normal", "_bigger")  # サイズが小さいのでbiggerにreplace
     icon = Image.open(io.BytesIO(requests.get(twitter_icon_url_bigger).content))
@@ -139,7 +136,7 @@ def add_twitter_icon(img, user):
     del draw
     icon.putalpha(mask)
 
-    # なぜか一回保存しないと反映されないので一時保存してすぐ削除する
+    # openしただけではメモリに載ってるだけなので、処理した内容は処理終了後メモリの内容が消えると同時に消えちゃうので一時保存してすぐ削除する
     icon.save("./media/sample.png")
     img.paste(icon, (600, 420), icon)
     del icon
@@ -147,9 +144,9 @@ def add_twitter_icon(img, user):
     return img
 
 
-################################
+###################
 # S3へのアップロード #
-################################
+###################
 def upload_to_s3(img, card):
 
     # S3バケットの取得
@@ -178,20 +175,6 @@ def upload_to_s3(img, card):
 
     # S3のファイルパスを返す
     return card.card_image.url
-
-
-# #############################################
-# # [ボツ]全角を2文字、半角を1文字でカウントする関数   #
-# # （add_text_to_image_multilineで使用）       #
-# #############################################
-# def get_east_asian_width_count(text):
-#     count = 0
-#     for c in text:
-#         if unicodedata.east_asian_width(c) in 'FWA':
-#             count += 2
-#         else:
-#             count += 1
-#     return count
 
 
 # """viewsでの呼び出し"""
@@ -233,58 +216,3 @@ def upload_to_s3(img, card):
 #
 # # 6. S3にアップロードしてS3のパスを返す
 # card_image_path = upload_to_s3(img_complete, card)
-
-
-"""
-デバッグ用
-"""
-# """タイトル"""
-# base_image = build_base_image()
-# title = "サクッと飲みませんか？コミュ障ですが初対面の方大歓迎です！"
-# font_path = "./static/fonts/Koruri-Regular.ttf"
-# font_size = 90
-# font_color = (255, 255, 255)
-# height = 70
-# width = 90
-# line_height = 105
-# one_line_length = 11
-#
-#
-# """by"""
-# base_image = build_base_image()
-# title = "by"
-# font_path = "./static/fonts/Koruri-Regular.ttf"  # TODO パスの入れ方？ フォント？
-# font_size = 45
-# font_color = (255, 255, 255)
-# height = 420
-# width = 530
-# line_height = 100
-# one_line_length = 11
-#
-#
-# """ハッシュタグ"""
-# # list = hashtags_to_one_line(card)
-# title = "#ハッシュタグ1 #ハッシュタグ2 #ハッシュタグ3 #ハッシュタグ4 #ハッシュタグ5"
-# font_path = "./static/fonts/Koruri-Regular.ttf"  # TODO パスの入れ方？ フォント？
-# font_size = 32
-# font_color = (255, 255, 255)
-# height = 520
-# width = 90
-# line_height = 40
-# one_line_length = 34
-#
-#
-#
-# # 複数行のテキストを画像に貼る場合
-# img = add_text_to_image_multiline(base_image, title, font_path, font_size, font_color, height, width, line_height, one_line_length)
-#
-# # 1行のテキストを画像に貼る場合
-# img = add_text_to_image_oneline(img, title, font_path, font_size, font_color, height, width)
-#
-# # アイコンを画像に貼る場合
-# img = add_twitter_icon(img)
-#
-# now = datetime.datetime.now()
-# file_name = "username" + "_" + now.strftime('%Y%m%d_%H%M%S') + ".png"  # ファイル名
-# file_path_local = "./media/" + file_name
-# img.save(file_path_local, "png")
