@@ -138,19 +138,15 @@ class CardCreateView(View):
             # ハッシュタグは複数入ってくる可能性あるのでfor使う
                 for item in hash_set.cleaned_data:
                     # 既にそのハッシュタグ作られていれば作成しない
-                    try:
-                        hashtag = HashTags.objects.get(name=item['hash_tags'])
-                    except:
-                        hashtag = HashTags.objects.create(name=item['hash_tags'])
-                    finally:
-                        new_card.hash_tags.add(hashtag) 
+                    hashtag = HashTags.objects.get_or_create(name=item['hash_tags'])
+                    new_card.hash_tags.add(hashtag) 
 
                 # s3パスが返ってくるはずなのでそれが空でなければ次に進める
                 new_card_image_path = card_add_card_image(new_card)
                 if len(new_card_image_path) == 0:
                     return redirect('extra_app:preview')
                 else:
-                    # エラーなら作ったカード削除して元のページに返す
+                    # エラーなら作った中途半端に作られたカード削除して元のページに返す
                     new_card.delete()
                     messages.error(request,"画像のアップロードに失敗しました")
                     return render(request,'input.html',{'cards_set':cards_set,'hash_set':hash_set})
