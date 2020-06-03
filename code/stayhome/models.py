@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import User as authUser
 
 CONDITIONS = (
     (1, '募集中'),
@@ -24,7 +25,7 @@ class HashTags(models.Model):
 
 
 class Card(models.Model):
-    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    author = models.ForeignKey(authUser, on_delete=models.CASCADE)
     title = models.CharField('募集タイトル', max_length=32)
     content = models.TextField('募集内容', default='なし')
     meeting_link = models.CharField(

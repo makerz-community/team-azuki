@@ -155,7 +155,7 @@ def upload_to_s3(img, card):
 
     # S3に保存するパスを設定
     now = datetime.datetime.now()
-    file_name = card.auther.username + "_" + now.strftime('%Y%m%d_%H%M%S') + ".png"  # ファイル名
+    file_name = card.author.username + "_" + now.strftime('%Y%m%d_%H%M%S') + ".png"  # ファイル名
     filepath_db = "test/" + file_name  # db保存用path
     filepath_s3 = "media/" + filepath_db  # S3アップロード用path
 

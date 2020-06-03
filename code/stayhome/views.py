@@ -126,7 +126,7 @@ class CardCreateView(View):
         cards_set = self.CardFormSet(request.POST,prefix='cards')
         hash_set = self.HashTagsFormSet(request.POST,prefix='hash')
 
-        if cards_set.is_valid() and hash_set.is_valid():
+        if cards_set.is_valid() and hash_set.is_valid() :
 
             # prefixを使うことでcardsのcleaned_dataの中が一段深くなる(複数フォーム想定されるため)
             new_card = Card.objects.create(author=request.user,title=cards_set.cleaned_data[0]['title'],content=cards_set.cleaned_data[0]['content'],
@@ -134,22 +134,40 @@ class CardCreateView(View):
                         stopped_at=cards_set.cleaned_data[0]['stopped_at'],target_day=cards_set.cleaned_data[0]['target_day'],
                         member_number=cards_set.cleaned_data[0]['member_number'])
 
-            if hash_set.cleaned_data[0]:
-            # ハッシュタグは複数入ってくる可能性あるのでfor使う
+            # ハッシュタグを追加したかの確認
+            if len(hash_set.cleaned_data) > 0:
+                # 空のハッシュタグだけで実質ハッシュタグ無しの場合の対策
+                hash_flg = False
+                # ハッシュタグは複数入ってくる可能性あるのでfor使う
                 for item in hash_set.cleaned_data:
-                    # 既にそのハッシュタグ作られていれば作成しない
-                    hashtag = HashTags.objects.get_or_create(name=item['hash_tags'])
-                    new_card.hash_tags.add(hashtag) 
+
+                    # ハッシュタグのフォームの中身が空でない時だけ探す
+                    if len(item) > 0:
+                        # ハッシュタグが一度でも作られればTrueへ 
+                        hash_flg = True
+
+                        # 既にそのハッシュタグ作られていれば作成しない
+                        hashtag,complete = HashTags.objects.get_or_create(name=item['hash_tags'])
+                        new_card.hash_tags.add(hashtag) 
+                    else:
+                        continue
 
                 # s3パスが返ってくるはずなのでそれが空でなければ次に進める
-                new_card_image_path = card_add_card_image(new_card)
-                if len(new_card_image_path) == 0:
-                    return redirect('extra_app:preview')
-                else:
-                    # エラーなら作った中途半端に作られたカード削除して元のページに返す
-                    new_card.delete()
-                    messages.error(request,"画像のアップロードに失敗しました")
-                    return render(request,'input.html',{'cards_set':cards_set,'hash_set':hash_set})
+                new_card_image_path = card_add_card_image(new_card,request.user,hash_flg)
+                
+            # ハッシュタグが一つも指定されていない時
+            else:
+                new_card_image_path = card_add_card_image(new_card,request.user,False)
+
+
+            # アップロード後のs3パスが0文字でなければ成功とみなしてプレビューページへ
+            if len(new_card_image_path) != 0:
+                return redirect('extra_app:preview')
+            else:
+                # エラーなら作った中途半端に作られたカード削除して元のページに返す
+                new_card.delete()
+                messages.error(request,"画像のアップロードに失敗しました")
+                return render(request,'input.html',{'cards_set':cards_set,'hash_set':hash_set})
         else:
             # バリデーションに落ちた時の処理。例：日付フォーマットを間違えた
             return render(request,'input.html',{'cards_set':cards_set,'hash_set':hash_set})
@@ -191,7 +209,8 @@ class MyPageView(generic.ListView):
 
 # カードを入れるとカードからOGP画像を作って保存までしてくれる関数
 # 戻り値にS3のpathを返す。
-def card_add_card_image(card):
+# hash_flg True->ハッシュタグがある:False->ハッシュタグがない
+def card_add_card_image(card,user,hash_flg):
     # """viewsでの呼び出し"""
     # # 1. ベース画像作成とフォント指定
     base_image = build_base_image()
@@ -217,18 +236,23 @@ def card_add_card_image(card):
     img_with_by = add_text_to_image_oneline(img_with_title, text, font_path, font_size, font_color, height, width)
                 
     # # 4. アイコン入れる
-    img_with_icon = add_twitter_icon(img_with_by)
+    img_with_icon = add_twitter_icon(img_with_by,user)
 
-    # # 5. ハッシュタグ入れる
-    tags_list = hashtags_to_one_line(card)
-    tags = tags_list
-    font_size = 32
-    height = 520
-    width = 90
-    line_height = 40
-    one_line_length = 34
-    img_complete = add_text_to_image_multiline(img_with_by, tags, font_path, font_size, font_color, height, width, line_height, one_line_length)
+    # ハッシュタグがあるかどうかで分岐 Trueならハッシュタグがあるとみなす
+    if hash_flg:
+        # # 5. ハッシュタグ入れる
+        tags_list = hashtags_to_one_line(card)
+        tags = tags_list
+        font_size = 32
+        height = 520
+        width = 90
+        line_height = 40
+        one_line_length = 34
+        img_complete = add_text_to_image_multiline(img_with_icon, tags, font_path, font_size, font_color, height, width, line_height, one_line_length)
 
-    # # 6. S3にアップロードしてS3のパスを返す
-    card_image_path = upload_to_s3(img_complete, card)
+        # # 6. S3にアップロードしてS3のパスを返す
+        card_image_path = upload_to_s3(img_complete, card)
+    else:
+        card_image_path = upload_to_s3(img_with_icon,card)
+
     return card_image_path
