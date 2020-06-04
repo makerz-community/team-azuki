@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse, reverse_lazy
 from django.views import generic,View
-from .forms import CardForm,HashTagsForm
+from .forms import CardForm,HashTagsForm,BaseCardFormSet
 from django.forms.formsets import formset_factory
 from .models import Card, HashTags, User
 from django.conf import settings
@@ -109,7 +109,7 @@ class OtameshiView(generic.TemplateView):
 ##################
 class CardCreateView(View):
      #formset_factoryを使う
-    CardFormSet = formset_factory(CardForm)
+    CardFormSet = formset_factory(CardForm,formset=BaseCardFormSet)
     HashTagsFormSet = formset_factory(HashTagsForm,extra=0)
 
     def get(self,request,*args,**kwargs):

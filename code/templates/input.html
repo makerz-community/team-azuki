@@ -30,8 +30,11 @@
       {{ cards_set.management_form }}
       {% for card in cards_set %}
         <p>{{ card.title }}</p>
+        <div class="error">{{ card.title.errors }}</div>
         <p>{{ card.content }}</p>
+        <div class="error">{{ card.content.errors }}</div>
         <p>{{ card.meeting_link }}</p>
+        <div class="error">{{ card.meeting_link.errors }}</div>
         <p>{{ card.started_at }}</p>
         <div class="error">{{ card.started_at.errors }}</div>
         <p>{{ card.stopped_at }}</p>
@@ -39,6 +42,7 @@
         <p>{{ card.target_day }}</p>
         <div class="error">{{ card.target_day.errors }}</div>
         <p>{{ card.member_number }}</p>
+        <div class="error">{{ card.member_number.errors }}</div>
       {% endfor %}
       <div id="hash-area" class="mt-5">
         <h4 class="mb-3">ハッシュタグ</h4>
