@@ -147,7 +147,7 @@ class CardCreateView(View):
                         hash_flg = True
 
                         # 既にそのハッシュタグ作られていれば作成しない
-                        hashtag,complete = HashTags.objects.get_or_create(name=item['hash_tags'])
+                        hashtag,created = HashTags.objects.get_or_create(name=item['hash_tags'])
                         new_card.hash_tags.add(hashtag) 
                     else:
                         continue
@@ -162,7 +162,7 @@ class CardCreateView(View):
 
             # アップロード後のs3パスが0文字でなければ成功とみなしてプレビューページへ
             if len(new_card_image_path) != 0:
-                return redirect('extra_app:preview')
+                return redirect('stayhome:preview')
             else:
                 # エラーなら作った中途半端に作られたカード削除して元のページに返す
                 new_card.delete()
