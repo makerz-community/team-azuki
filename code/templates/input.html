@@ -6,16 +6,136 @@
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css"
   integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+  <style>
+    .error{
+      color:red;
+    }
+  </style>
 </head>
 <body>
-  <h1>募集を作成</h1>
-  <form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <br>
-    <input type="submit" class="submit btn btn-danger" value="追加">
+  <div class="container">
+    
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-warning alert-dismissible" role="alert">
+          <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <strong>Error!!</strong>{{ message }}
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    <h2>募集を作成</h2>
+    <form method="post" class="form-group">
+      {% csrf_token %}
+      {{ cards_set.management_form }}
+      {% for card in cards_set %}
+        <p>{{ card.title }}</p>
+        <div class="error">{{ card.title.errors }}</div>
+        <p>{{ card.content }}</p>
+        <div class="error">{{ card.content.errors }}</div>
+        <p>{{ card.meeting_link }}</p>
+        <div class="error">{{ card.meeting_link.errors }}</div>
+        <p>{{ card.started_at }}</p>
+        <div class="error">{{ card.started_at.errors }}</div>
+        <p>{{ card.stopped_at }}</p>
+        <div class="error">{{ card.stopped_at.errors }}</div>
+        <p>{{ card.target_day }}</p>
+        <div class="error">{{ card.target_day.errors }}</div>
+        <p>{{ card.member_number }}</p>
+        <div class="error">{{ card.member_number.errors }}</div>
+      {% endfor %}
+      <div id="hash-area" class="mt-5">
+        <h4 class="mb-3">ハッシュタグ</h4>
+        {{ hash_set.management_form }}
+        {% for form in hash_set %}
+          <div class="delete-tag-{{ forloop.counter0 }} mb-3 form-inline">
+            {{ form.hash_tags }}
+            <button type="button" data-deleteid="{{ forloop.counter0 }}" class="delete-checkbtn btn" id="delete-{{ forloop.counter0 }}-btn">✖️</button>
+          </div>
+        {% endfor %}
+      </div>
+      <br>
+      <input type="submit" class="submit btn btn-danger" value="送信">
+      <button type="button" id="add" class="btn btn-primary">タグの追加</button>
   </form>
+  </div>
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy"
   crossorigin="anonymous"></script>
+  <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+  <script>
+    //試しにハッシュタグ追加、削除のjs書いてみました
+    $(function(){
+        // 現在のフォーム展開数取得(これをいじらないとフォームを増やしてもあまり意味がない)
+        //ハッシュタグ追加と削除、両方で使う
+        let totalManageElement = $('input#id_hash-TOTAL_FORMS');
+        let currentFileCount = parseInt(totalManageElement.val());
+    
+        /*
+        ハッシュタグ追加のボタンを押した時の処理
+        マネジメントフォームの調整と、label,input,削除ボタンをhash_areaに生成。
+        */
+        $('button#add').on('click', function(){
+          //試しに上限10でハッシュタグ量産できるようにする
+          if(currentFileCount<10){
+    
+            //input,削除ボタン生成
+            let inputElement = $('<input>', {
+                type: 'text',
+                name: 'hash-' + currentFileCount + '-hash_tags',
+                id: 'id_hash-' + currentFileCount + '-hash_tags',
+                maxlength:"32",
+                "class":"form-control",
+                "placeholder":"ハッシュタグを入力",
+            });
+            let deleteBtn = $('<button>',{
+              type:'button',
+              "data-deleteid":currentFileCount,
+              "class": 'delete-checkbtn btn btn',
+              id:'delete-'+currentFileCount+'-btn',
+              text:'✖️',
+            });
+    
+            //1ハッシュタグごとにdivを作って分ける
+            $('div#hash-area').append("<div class='delete-tag-"+currentFileCount+" mb-3 form-inline'>");
+    
+            //上記divに要素を追加
+            $('.delete-tag-'+currentFileCount).append(inputElement);
+            $('.delete-tag-'+currentFileCount).append(deleteBtn);
+            
+            //マネジメントフォームの調整
+            currentFileCount += 1;
+            totalManageElement.attr('value', currentFileCount);
+          }
+        });
+    
+    
+        /*
+        ハッシュタグ削除ボタンを押した時
+        指定フォームの削除とマネジメントフォーム調整
+        */
+       $(document).on('click','.delete-checkbtn',function(){
+    
+        let delete_id = $(this).data('deleteid');
+    
+        //delete_idから削除するハッシュタグを特定して消す
+        $('.delete-tag-'+delete_id).remove();
+    
+        if(currentFileCount>delete_id){
+          for(let i = delete_id+1;i<currentFileCount;i++){
+            //消した要素によって並べ替える
+            $('.delete-tag-'+i).attr('class','delete-tag-'+(i-1)+' mb-3 form-inline');
+            $('#id_hash-'+i+'-hash_tags').attr('name','hash-'+(i-1)+'-hash_tags');
+            $('#id_hash-'+i+'-hash_tags').attr('id','id_hash-'+(i-1)+'-hash_tags');
+            $('#delete-'+i+'-btn').attr('data-deleteid',i-1);
+            $('#delete-'+i+'-btn').attr('id','delete-'+(i-1)+'-btn');
+          }
+        }
+    
+        //マネジメントフォームの調整
+        currentFileCount -= 1;
+        totalManageElement.attr('value',currentFileCount);
+      });
+    });
+    </script> 
 </body>
 </html>

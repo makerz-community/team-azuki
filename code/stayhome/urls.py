@@ -1,6 +1,6 @@
 from django.urls import path
 from . import views
-from.views import TopView, CardCreateView, CardPreviewView, TwitterShareView, OtameshiView, CardDetailView, CardListView
+from.views import TopView, CardCreateView, CardPreviewView, TwitterShareView, OtameshiView, CardDetailView, CardListView, MyPageView
 
 app_name = 'stayhome'
 urlpatterns = [
@@ -11,4 +11,5 @@ urlpatterns = [
     path('cards/', CardListView.as_view(), name="card_list"),
     path('cards/<int:pk>/', CardDetailView.as_view(), name="card_detail"),
     path('otameshi/', OtameshiView.as_view(), name="otameshi"),
+    path('mypage/',MyPageView.as_view(),name="mypage"),
 ]
