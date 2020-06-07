@@ -18,9 +18,13 @@ from django.urls import path, include
 from . import settings
 from django.contrib.staticfiles.urls import static
 
+from stayhome.libs.apply_to_card import oauth_login
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('allauth.urls')),  # 追加
+    path('accounts/login-with-application/', oauth_login, name="twitter_login_with_application"),
+
     path('', include('stayhome.urls')),
 ]
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

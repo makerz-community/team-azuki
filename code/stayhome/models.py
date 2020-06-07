@@ -42,3 +42,16 @@ class Card(models.Model):
 
     def __str__(self):
         return self.title
+
+    # そのカードに応募している人数を返す（要らないかも…）
+    def get_total_application_number(self):
+        return self.application_set.all().count()
+
+
+class Application(models.Model):
+    user = models.OneToOneField(authUser, on_delete=models.CASCADE, verbose_name="ユーザー")
+    applied_card = models.ForeignKey(Card, on_delete=models.CASCADE, verbose_name="応募したカード")
+
+    def __str__(self):
+        return f"{self.user.username} の応募情報"
+
